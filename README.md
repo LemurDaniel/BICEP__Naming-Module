@@ -3,14 +3,22 @@
 ## **Bicep Naming-Module POC** - An approach to handle consistent naming in Bicep-Modules
 
 
+#### I haven't foud anything else good for naming in Bicep yet and Microsoft just always seems to use vars and implement Naming in every Module. So sharing this one here for a centralised solution. Hope it helps anyone else 🚀😊
+
+<br>
+
 This approach for a naming-module uses:
 - [User Defined Functions](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/user-defined-functions)
 - [Import and Export](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/bicep-import)
+
+<br>
 
 > <span style="color:orange">**Since `User Defined Functions` were release with Bicep 0.26.x, this Approach requires Bicep 0.26.x or higher**</span>
 
 > <span style="color:orange">**In some previous version it can be activated as an experimental feature**</span>
 
+
+<br>
 
 ## How To Use
 
@@ -96,6 +104,8 @@ resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-04-01' = {
 }
 
 ```
+
+<br>
 
 
 ## Some Advantages
