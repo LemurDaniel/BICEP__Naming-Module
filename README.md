@@ -164,3 +164,17 @@ Since Naming is implemented in one central Naming-Module and not different modul
 ### Easy to use and implement
 
 It is simple to implement in any module with just adding the Import-Statement and the Function-Calls.
+
+
+
+<br>
+
+
+### TODOS, Ideas and stuff
+
+- Add more naming examples and implementations for other edge-cases:
+  - Virtual Machine Disks
+    - using Disk-LUN in naming
+    - different naming prefixes for disktype: 'datadisk', 'osdisk', 'shareddisk', etc.
+  - ...
+- For custom keyWords <KEY_WORD>, search for camelcase keyWord in provided parameters-Object, instead of key_word

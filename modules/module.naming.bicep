@@ -82,6 +82,12 @@ var namingSchemaReference = {
   locations: {
     'West Europe': 'euwe'
     westeurope: 'euwe'
+
+    'Germany North': 'geno'
+    germanynorth: 'geno'
+
+    'Germany West Central': 'gewc'
+    germanywestcentral: 'gewc'
   }
 
   resources: {
