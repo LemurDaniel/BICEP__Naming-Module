@@ -150,7 +150,7 @@ If it is required and not provided, an error such as the following is forced by 
 
 ![example.error.missingParameter](./_resources/example.error.mssingParameter.png)
 
-<span style="color:orange">**This doesn't apply for special Parameters which currently are UNIQUE_STRING and POSTFIX_INDEX**</span>
+<span style="color:orange">**This doesn't apply for special Parameters which currently are UNIQUE_STRING **</span>
 
 <span style="color:orange">**Keywords used in the pattern array need always be written in `< >`**</span>
 
