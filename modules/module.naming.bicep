@@ -8,7 +8,9 @@
 @export()
 func nameGenerator(resourceType string, schema object, parameters object) string =>
   last([
-    // Check whether all required parameters are provided in the paremeters object
+    /*
+      Validation for missing required parameters
+    */
     map(
       schema.resources[resourceType].required,
       // NOTE: 
@@ -18,22 +20,7 @@ func nameGenerator(resourceType string, schema object, parameters object) string
     )
 
     /*
-    validate: {
-      DISK_LUN: {
-        range: [0, 10]
-      }
-      DISK_TYPE: {
-        set: [
-          'osdisk'
-          'datadisk'
-          'shareddisk'
-        ]
-      }
-    }
-    */
-
-    /*
-      Validation for Parameter correct number range
+      Validation for parameter being in correct number range
     */
     map(
       filter(
@@ -59,7 +46,7 @@ func nameGenerator(resourceType string, schema object, parameters object) string
     )
 
     /*
-      Validation for Parameter being in a set of values
+      Validation for parameter being in a set of values
     */
     map(
       filter(
@@ -69,14 +56,14 @@ func nameGenerator(resourceType string, schema object, parameters object) string
             // Filter if validation is of range and if to be validated parameter is in parameters-Object. Required-Check is already done above.
             validation => contains(parameters, replace(validation.key, '_', '')) && contains(validation.value, 'set')
           ),
-          validation_Range =>
+          validation_Set =>
             ({
-              key: validation_Range.key
-              value: parameters[replace(validation_Range.key, '_', '')]
-              set: validation_Range.value.set
+              key: validation_Set.key
+              value: parameters[replace(validation_Set.key, '_', '')]
+              set: validation_Set.value.set
             })
         ),
-        validation_Range => !(contains(validation_Range.set, validation_Range.value))
+        validation_Set => !(contains(validation_Set.set, validation_Set.value))
       ),
       // Force an error by accessing an invalid index
       validation_Errors =>
