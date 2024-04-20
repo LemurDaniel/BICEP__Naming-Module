@@ -55,7 +55,7 @@ func nameGenerator(resourceType string, schema object, parameters object) string
             segment_Parameter =>
               !segment_Parameter.isKeyWord
                 ? segment_Parameter.name
-                // Replace only if a parameter is present in the parameters-object.
+                // Replace only if a parameter is present in the parameters-object. The check for required parameters is already done before that.
                 : contains(parameters, segment_Parameter.name) ? parameters[segment_Parameter.name] : ''
           ),
           // Make all segments lowercase for resources like storage accounts
