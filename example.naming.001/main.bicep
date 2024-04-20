@@ -32,3 +32,13 @@ output storageAccountNamingExample string = nameGenerator(
     environment: environment
   }
 )
+output functionAppNamingExample string = nameGenerator(
+  'Microsoft.Web/sites/functionApp',
+  namingSchemaReference,
+  {
+    name: 'apps'
+    location: location
+    environment: environment
+    postfixIndex: 1
+  }
+)

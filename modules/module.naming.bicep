@@ -25,17 +25,10 @@ func nameGenerator(resourceType string, schema object, parameters object) string
             map(
               map(
                 map(
-                  map(
-                    schema.resources[resourceType].pattern,
-                    // Replace location with correct shortname
-                    segment_Location =>
-                      segment_Location == '<LOCATION>' ? schema.locations[parameters.location] : segment_Location
-                  ),
-                  // Replace postfix with correct format based on index
-                  segment_PostfixIndex =>
-                    segment_PostfixIndex == '<POSTFIX_INDEX>' && contains(parameters, 'postfixIndex')
-                      ? format('{0:000}', parameters.postfixIndex)
-                      : segment_PostfixIndex
+                  schema.resources[resourceType].pattern,
+                  // Replace location with correct shortname
+                  segment_Location =>
+                    segment_Location == '<LOCATION>' ? schema.locations[parameters.location] : segment_Location
                 ),
                 // Replace segments with unique string
                 segment_Unique =>
@@ -46,7 +39,8 @@ func nameGenerator(resourceType string, schema object, parameters object) string
               segment_Transform =>
                 ({
                   isKeyWord: startsWith(segment_Transform, '<') && endsWith(segment_Transform, '>')
-                  name: startsWith(segment_Transform, '<') && endsWith(segment_Transform, '>')
+                  keyWord: substring(segment_Transform, 1, length(segment_Transform) - 2)
+                  parameter: startsWith(segment_Transform, '<') && endsWith(segment_Transform, '>')
                     ? replace(substring(segment_Transform, 1, length(segment_Transform) - 2), '_', '')
                     : segment_Transform
                 })
@@ -54,9 +48,13 @@ func nameGenerator(resourceType string, schema object, parameters object) string
             // Replace segments in pattern with correct parameters, if it is a keyword < >
             segment_Parameter =>
               !segment_Parameter.isKeyWord
-                ? segment_Parameter.name
+                ? segment_Parameter.parameter
                 // Replace only if a parameter is present in the parameters-object. The check for required parameters is already done before that.
-                : contains(parameters, segment_Parameter.name) ? parameters[segment_Parameter.name] : ''
+                : format(
+                    // Apply special formatting if defined for a parameter
+                    schema.resources[resourceType].formats[?segment_Parameter.keyWord] ?? '{0}',
+                    parameters[?segment_Parameter.parameter]
+                  )
           ),
           // Make all segments lowercase for resources like storage accounts
           segment_Lowercase =>
@@ -104,6 +102,22 @@ var namingSchemaReference = {
   }
 
   resources: {
+    'Microsoft.Web/sites/functionApp': {
+      enforceAllLowerCase: true
+
+      delimiter: '-'
+      pattern: ['func', '<PREFIX>', '<NAME>', '<LOCATION>', '<ENVIRONMENT>', '<POSTFIX_INDEX>']
+      required: [
+        'NAME'
+        'LOCATION'
+        'ENVIRONMENT'
+        'POSTFIX_INDEX'
+      ]
+      formats: {
+        POSTFIX_INDEX: '{0:000}'
+      }
+    }
+
     'Microsoft.KeyVault/vaults': {
       enforceAllLowerCase: true
 
@@ -113,6 +127,7 @@ var namingSchemaReference = {
         'NAME'
         'ENVIRONMENT'
       ]
+      formats: {}
     }
 
     'Microsoft.Web/sites/functions': {
@@ -126,6 +141,9 @@ var namingSchemaReference = {
         'ENVIRONMENT'
         'POSTFIX_INDEX'
       ]
+      formats: {
+        POSTFIX_INDEX: '{0:000}'
+      }
     }
 
     'Microsoft.Storage/storageAccounts': {
@@ -138,6 +156,9 @@ var namingSchemaReference = {
         'LOCATION'
         'ENVIRONMENT'
       ]
+      formats: {
+        POSTFIX_INDEX: '{0:000}'
+      }
     }
 
     'Microsoft.Network/virtualNetworks': {
@@ -151,6 +172,9 @@ var namingSchemaReference = {
         'ENVIRONMENT'
         'POSTFIX_INDEX'
       ]
+      formats: {
+        POSTFIX_INDEX: '{0:000}'
+      }
     }
 
     'Microsoft.Network/virtualNetworks/subnets': {
@@ -164,6 +188,9 @@ var namingSchemaReference = {
         'ENVIRONMENT'
         'POSTFIX_INDEX'
       ]
+      formats: {
+        POSTFIX_INDEX: '{0:000}'
+      }
     }
   }
 }
