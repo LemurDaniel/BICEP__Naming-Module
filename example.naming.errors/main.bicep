@@ -14,24 +14,6 @@ param environment string = 'dev'
 // import { namingSchemaReference, nameGenerator } from 'br:bicepnamingpoc001.azurecr.io/bicep/module.naming:1.0.0'
 import { namingSchemaReference, nameGenerator } from '../modules/module.naming.bicep'
 
-// Use 'nameGenerator()'-Function for consistent naming.
-output kvNamingExample string = nameGenerator(
-  'Microsoft.KeyVault/vaults',
-  namingSchemaReference,
-  {
-    name: 'secrets'
-    environment: environment
-  }
-)
-output storageAccountNamingExample string = nameGenerator(
-  'Microsoft.Storage/storageAccounts',
-  namingSchemaReference,
-  {
-    name: 'objects'
-    location: location
-    environment: environment
-  }
-)
 output functionAppNamingExample string = nameGenerator(
   'Microsoft.Web/sites/functions',
   namingSchemaReference,
@@ -39,7 +21,7 @@ output functionAppNamingExample string = nameGenerator(
     name: 'apps'
     location: location
     environment: environment
-    postfixIndex: 1
+    postfixIndex: 1222 // Error by being out of range
   }
 )
 output dataDiskNamingExample string = nameGenerator(
@@ -50,7 +32,7 @@ output dataDiskNamingExample string = nameGenerator(
     location: location
     environment: environment
     diskType: 'datadisk'
-    diskLun: 1
+    diskLun: 12 // Error by being out of range
   }
 )
 output osDiskNamingExample string = nameGenerator(
@@ -60,7 +42,7 @@ output osDiskNamingExample string = nameGenerator(
     name: 'apps'
     location: location
     environment: environment
-    diskType: 'osdisk'
+    diskType: 'blabla' // Error by not being in allowed value set
     diskLun: 1
   }
 )

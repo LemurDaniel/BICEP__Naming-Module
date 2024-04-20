@@ -33,6 +33,16 @@ $Deployment = @{
       
 New-AzResourceGroupDeployment @Deployment
 
+# Deploy bicep file for naming error examples
+
+$Deployment = @{
+      Name                  = "pwsh.example.naming.errors"
+      TemplateFile          = "./example.naming.errors/main.bicep"
+      ResourceGroupName     = $resourceGroup
+}
+      
+New-AzResourceGroupDeployment @Deployment
+
 # Deploy bicep file for vnet naming example
 
 $Deployment = @{

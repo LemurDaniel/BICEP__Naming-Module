@@ -17,7 +17,75 @@ func nameGenerator(resourceType string, schema object, parameters object) string
       required => parameters[replace(required, '_', '')]
     )
 
-    // Generate the name from the pattern provided via the schema object.
+    /*
+    validate: {
+      DISK_LUN: {
+        range: [0, 10]
+      }
+      DISK_TYPE: {
+        set: [
+          'osdisk'
+          'datadisk'
+          'shareddisk'
+        ]
+      }
+    }
+    */
+
+    /*
+      Validation for Parameter correct number range
+    */
+    map(
+      filter(
+        map(
+          filter(
+            items(schema.resources[resourceType].validate),
+            // Filter if validation is of range and if to be validated parameter is in parameters-Object. Required-Check is already done above.
+            validation => contains(parameters, replace(validation.key, '_', '')) && contains(validation.value, 'range')
+          ),
+          validation_Range =>
+            ({
+              key: validation_Range.key
+              value: parameters[replace(validation_Range.key, '_', '')]
+              range: validation_Range.value.range
+            })
+        ),
+        validation_Range =>
+          !(validation_Range.value >= validation_Range.range[0] && validation_Range.value <= validation_Range.range[1])
+      ),
+      // Force an error by accessing an invalid index
+      validation_Errors =>
+        parameters['${validation_Errors.key} with ${validation_Errors.value} is not in range: ${validation_Errors.range}']
+    )
+
+    /*
+      Validation for Parameter being in a set of values
+    */
+    map(
+      filter(
+        map(
+          filter(
+            items(schema.resources[resourceType].validate),
+            // Filter if validation is of range and if to be validated parameter is in parameters-Object. Required-Check is already done above.
+            validation => contains(parameters, replace(validation.key, '_', '')) && contains(validation.value, 'set')
+          ),
+          validation_Range =>
+            ({
+              key: validation_Range.key
+              value: parameters[replace(validation_Range.key, '_', '')]
+              set: validation_Range.value.set
+            })
+        ),
+        validation_Range => !(contains(validation_Range.set, validation_Range.value))
+      ),
+      // Force an error by accessing an invalid index
+      validation_Errors =>
+        parameters['${validation_Errors.key} with ${validation_Errors.value} is not in set: ${validation_Errors.set}']
+    )
+
+    /*
+      Final generating of name, after all checks are run
+    */
     join(
       filter(
         map(
@@ -52,7 +120,7 @@ func nameGenerator(resourceType string, schema object, parameters object) string
                 // Replace only if a parameter is present in the parameters-object. The check for required parameters is already done before that.
                 : format(
                     // Apply special formatting if defined for a parameter
-                    schema.resources[resourceType].formats[?segment_Parameter.keyWord] ?? '{0}',
+                    schema.resources[resourceType].format[?segment_Parameter.keyWord] ?? '{0}',
                     parameters[?segment_Parameter.parameter]
                   )
           ),
@@ -102,7 +170,6 @@ var namingSchemaReference = {
   }
 
   resources: {
-
     'Microsoft.KeyVault/vaults': {
       enforceAllLowerCase: true
 
@@ -112,7 +179,12 @@ var namingSchemaReference = {
         'NAME'
         'ENVIRONMENT'
       ]
-      formats: {}
+      format: {}
+      validate: {
+        POSTFIX_INDEX: {
+          range: [0, 999]
+        }
+      }
     }
 
     'Microsoft.Web/sites/functions': {
@@ -126,8 +198,13 @@ var namingSchemaReference = {
         'ENVIRONMENT'
         'POSTFIX_INDEX'
       ]
-      formats: {
+      format: {
         POSTFIX_INDEX: '{0:000}'
+      }
+      validate: {
+        POSTFIX_INDEX: {
+          range: [0, 999]
+        }
       }
     }
 
@@ -141,8 +218,40 @@ var namingSchemaReference = {
         'LOCATION'
         'ENVIRONMENT'
       ]
-      formats: {
+      format: {
         POSTFIX_INDEX: '{0:000}'
+      }
+      validate: {
+        POSTFIX_INDEX: {
+          range: [0, 999]
+        }
+      }
+    }
+
+    'Microsoft.Compute/disks': {
+      enforceAllLowerCase: true
+
+      delimiter: '-'
+      pattern: ['<DISK_TYPE>', '<DISK_LUN>', '<NAME>']
+      required: [
+        'DISK_TYPE'
+        'DISK_LUN'
+        'NAME'
+      ]
+      format: {
+        DISK_LUN: '{0:00}'
+      }
+      validate: {
+        DISK_LUN: {
+          range: [0, 10]
+        }
+        DISK_TYPE: {
+          set: [
+            'osdisk'
+            'datadisk'
+            'shareddisk'
+          ]
+        }
       }
     }
 
@@ -157,8 +266,13 @@ var namingSchemaReference = {
         'ENVIRONMENT'
         'POSTFIX_INDEX'
       ]
-      formats: {
+      format: {
         POSTFIX_INDEX: '{0:000}'
+      }
+      validate: {
+        POSTFIX_INDEX: {
+          range: [0, 999]
+        }
       }
     }
 
@@ -173,8 +287,13 @@ var namingSchemaReference = {
         'ENVIRONMENT'
         'POSTFIX_INDEX'
       ]
-      formats: {
+      format: {
         POSTFIX_INDEX: '{0:000}'
+      }
+      validate: {
+        POSTFIX_INDEX: {
+          range: [0, 999]
+        }
       }
     }
   }
