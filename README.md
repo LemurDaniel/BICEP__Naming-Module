@@ -110,9 +110,9 @@ resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-04-01' = {
 
 ### NOTES:
 
-The Keywords used in the pattern a customizable, meaning for each keyword a corresponding paramter in the **parameters**-Object given on the function call is searched. 
+The Keywords used in the pattern a customizable. For each keyword a corresponding parameter is searched in the **parameters**-Object given on the function call. For Parameters like <CUSTOM_KEYWORD>, a camelcase parameter customKeyword is expected.
 
-If it is required and not provided an error such as the following is forced by the function, preventing incorrect naming to be deployed.
+If it is required and not provided, an error such as the following is forced by the function, preventing incorrect naming to be deployed.
 
 ![example.error.missingParameter](./_resources/example.error.mssingParameter.png)
 
@@ -177,4 +177,3 @@ It is simple to implement in any module with just adding the Import-Statement an
     - using Disk-LUN in naming
     - different naming prefixes for disktype: 'datadisk', 'osdisk', 'shareddisk', etc.
   - ...
-- For custom keyWords <KEY_WORD>, search for camelcase keyWord in provided parameters-Object, instead of key_word
