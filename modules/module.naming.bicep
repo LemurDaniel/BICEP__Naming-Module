@@ -169,10 +169,10 @@ var namingSchemaReference = {
         'IDENTIFIER'
       ]
       format: {
-        POSTFIX_INDEX: '{0:000#}'
+        IDENTIFIER: '{0:0000}'
       }
       validate: {
-        POSTFIX_INDEX: {
+        IDENTIFIER: {
           range: [0, 9999]
         }
       }
