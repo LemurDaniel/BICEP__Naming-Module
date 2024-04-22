@@ -1,0 +1,32 @@
+
+name: Verify Pull Request to Master-Branch
+
+on:
+  pull_request:
+    branches:
+        - master
+   
+jobs:
+  verify_branch:
+
+    runs-on: ubuntu-latest
+    name: 'Verify Release Branch'
+
+    steps:
+      - name: Verify Source Branch
+        uses: actions/github-script@v5
+        env: 
+          SOURCE_BRANCH: ${{ github.head_ref }}
+        with:
+          script: |
+
+              if(process.env.SOURCE_BRANCH.match(/^release[/]v\d+[.]\d+[.]x$/)) {
+                  console.log(`Source Branch '${process.env.SOURCE_BRANCH}' is a release branch.`)
+              }
+              else if(process.env.SOURCE_BRANCH.match(/^hotfix[/].*$/)) {
+                  console.log(`Source Branch '${process.env.SOURCE_BRANCH}' is a hotfix branch.`)
+              }
+              else {
+                  console.log(`Source Branch '${process.env.SOURCE_BRANCH}' is not a valid branch.`)
+                  process.exit(1)
+              }

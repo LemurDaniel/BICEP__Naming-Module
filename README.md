@@ -9,7 +9,7 @@ This approach for a Naming-Module uses:
 <br>
 
 ```Bicep
-import { namingSchemaReference, nameGenerator } from 'br:bicepnamingpoc001.azurecr.io/bicep/module.naming:1.0.0'
+import { namingSchemaReference, nameGenerator } from 'br:bicepnamingpoc001.azurecr.io/module.naming:1.0.0'
 
 resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-04-01' = {
 
@@ -110,7 +110,7 @@ To use the Naming-Module, the exported **schemaReference** and **nameGenerator()
 
 ```Bicep
 // This can also be imported from a Bicep-Module-Registry
-// import { namingSchemaReference, nameGenerator } from 'br:bicepnamingpoc001.azurecr.io/bicep/module.naming:1.0.0'
+// import { namingSchemaReference, nameGenerator } from 'br:bicepnamingpoc001.azurecr.iomodule.naming:1.0.0'
 
 import { namingSchemaReference, nameGenerator } from 'module.naming.bicep'
 

@@ -1,0 +1,62 @@
+name: Create a new Bicep Release Branch
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        description: 'Release Version {Major}.{Minor}'
+        required: true
+        
+jobs:
+  create_release_branch:
+    name: Create a Release Branch
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      
+      - name: Verify Version
+        id: transform_version
+        uses: actions/github-script@v5
+        env:
+          VERSION: ${{ inputs.version }}
+        with:
+          script: |
+            if(!process.env.VERSION.match(/^\d+[.]\d+$/)) {
+              throw new Error(`Release Branch is not valid: '${process.env.VERSION}'`)
+              process.exit(-1)
+            }
+      
+      - name: Create Release Branch
+        run: |
+          git config user.name "${{ vars.CONFIG_USER }}"
+          git config user.email "${{ vars.CONFIG_EMAIL }}"
+
+          git checkout -B release/v${{ inputs.version }}.x
+          git push --set-upstream origin release/v${{ inputs.version }}.x
+
+          git tag ${{ inputs.version }}.0
+          git push origin ${{ inputs.version }}.0
+
+
+
+  publish_bicep_unreleased:
+    needs: 
+      - create_release_branch
+    uses: ./.github/workflows/bicep.acr.publish.yaml
+    secrets: inherit
+    with:
+      file_path:  ./modules/module.naming.bicep
+      registry: bicepnamingpoc001
+
+      # Push unreleased images for testing
+      image: unreleased/module.naming
+      version: ${{ inputs.version }}.0
+
+      # Don't make pushed images immutable
+      immutable: false
+
+
+ 

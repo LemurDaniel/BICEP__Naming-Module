@@ -1,0 +1,80 @@
+name: Publish Bicep-Module to ACR
+
+on:
+  workflow_call:
+    inputs:
+      file_path:
+        type: string
+        description: Path to the Bicep-File to publish
+        required: true
+
+      registry:
+        type: string
+        description: Name of the Azure Registry to publish into
+        required: true
+      image:
+        type: string
+        description: Name of the Image to deploy
+        required: true
+      version:
+        type: string
+        description: Release Version Major.Minor
+        required: true
+
+      immutable:
+        type: boolean
+        description: Define if the tagged-version should be read-only
+        required: false
+        default: false
+
+      environment:
+        type: string
+        description: The github environment with the credentials
+        required: false
+        
+jobs:
+  publish_module:
+    name: Publish to Bicep Module
+    environment: ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+
+    steps:
+        - name: Checkout code
+          uses: actions/checkout@v2
+
+        - name: Azure Login
+          uses: azure/login@v1
+          with:
+            creds: ${{ secrets.AZURE_CICDSPN }}
+
+        - name: Publish Bicep to ACR ${{ inputs.registry }}
+          uses: azure/cli@v2
+          with:
+            azcliversion: 2.30.0
+            inlineScript: |
+
+              az bicep install
+
+              az bicep publish \
+                --file "${{ inputs.file_path }}" \
+                --target "br:${{ inputs.registry }}.azurecr.io/${{ inputs.image }}:${{ inputs.version }}"
+
+              az bicep publish \
+                --file "${{ inputs.file_path }}" \
+                --target "br:${{ inputs.registry }}.azurecr.io/${{ inputs.image }}:latest"
+
+        - name: Lock Image ${{ inputs.image }}:${{ inputs.version }}
+          if: inputs.immutable == true
+          uses: azure/cli@v2
+          with:
+            azcliversion: 2.30.0
+            inlineScript: |
+
+              az acr repository update \
+                --name "${{ inputs.registry }}" \
+                --image "${{ inputs.image }}:${{ inputs.version }}" \
+                --write-enabled false --delete-enabled false
+
+
+
+ 

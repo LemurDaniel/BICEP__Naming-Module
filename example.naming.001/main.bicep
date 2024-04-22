@@ -11,7 +11,7 @@ param environment string = 'dev'
 */
 
 // Import schema and function from Naming-Module
-// import { namingSchemaReference, nameGenerator } from 'br:bicepnamingpoc001.azurecr.io/bicep/module.naming:1.0.0'
+// import { namingSchemaReference, nameGenerator } from 'br:bicepnamingpoc001.azurecr.io/module.naming:1.0.0'
 import { namingSchemaReference, nameGenerator } from '../modules/module.naming.bicep'
 
 // Use 'nameGenerator()'-Function for consistent naming.

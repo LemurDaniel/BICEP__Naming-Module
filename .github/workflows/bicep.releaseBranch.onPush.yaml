@@ -1,0 +1,84 @@
+
+name: Publish unreleased Bicep-Module-Version
+
+on:
+  push:
+    branches:
+      - release/**
+   
+jobs:
+  create_tag:
+    name: Create Tag for unreleased Version
+    runs-on: ubuntu-latest
+  
+    outputs:
+      version_tag: ${{ steps.transform_tag.outputs.result }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.ref }}
+          
+      #- name: Get previous Tag
+      #  id: previous_tag
+      #  run: |
+      #      git fetch --tags --force
+      #      git describe --tags --always
+      #      git describe --abbrev=0 --tags --always
+
+      #      PREVIOUS_TAG=$(git describe --abbrev=0 --tags)
+      #      echo "PREVIOUS_TAG=$PREVIOUS_TAG" >> $GITHUB_OUTPUT
+
+      - name: Transform Tag
+        id: transform_tag
+        uses: actions/github-script@v5
+        env:
+          BRANCH: ${{ github.ref_name }}
+        with:
+          result-encoding: string
+          script: |
+
+            // Using API because git describe --abbrev=0 --tags doesn't work
+            const versionRef = process.env.BRANCH.match(/\d+[.]\d+/)[0]
+            const references = await github.rest.git.listMatchingRefs({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+
+              ref: `tags/${versionRef}`
+            })
+
+            console.log(references)
+
+            const [ Major, Minor, Patch ] = references.data.at(-1).ref.match(/\d+[.]\d+[.]\d+/)[0].split('.')
+
+            return `${Major}.${Minor}.${parseInt(Patch)+1}`
+
+      - name: Create new Tag
+        env:
+          NEXT_PATCH: ${{ steps.transform_tag.outputs.result }}
+        run: |
+            git config user.name "${{ vars.CONFIG_USER }}"
+            git config user.email "${{ vars.CONFIG_EMAIL }}"
+
+            git tag "$NEXT_PATCH"
+            git push origin "$NEXT_PATCH"
+
+
+
+
+  publish_bicep_unreleased:
+    needs: 
+      - create_tag
+    uses: ./.github/workflows/bicep.acr.publish.yaml
+    secrets: inherit
+    with:
+      file_path:  ./modules/module.naming.bicep
+      registry: bicepnamingpoc001
+
+      # Push unreleased images for testing
+      image: unreleased/module.naming
+      version: ${{ needs.create_tag.outputs.version_tag }}
+
+      # Don't make pushed images immutable
+      immutable: false

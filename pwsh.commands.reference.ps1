@@ -19,7 +19,7 @@ New-AzContainerRegistry `
 # Publis the Naming-Module in a registry for reuse across all module.
 Publish-AzBicepModule `
       -FilePath "./modules/module.naming.bicep" `
-      -Target "br:$moduleRegistry.azurecr.io/bicep/module.naming:1.0.0"
+      -Target "br:$moduleRegistry.azurecr.io/module.naming:1.0.0"
 
 #>
 
