@@ -9,7 +9,12 @@ This approach for a Naming-Module uses:
 <br>
 
 
-# Look into [Module-Registry](https://github.com/LemurDaniel/BICEP__Module-Registry/blob/master/governance/naming/module.bicep) for a more recent Versions of this.
+
+# ⚠️ Look into [Module-Registry](https://github.com/LemurDaniel/BICEP__Module-Registry/blob/master/governance/naming/module.bicep) for a more recent Versions of this. ⚠️
+
+---
+
+### Following: Outdated Module:
 
 ---
 
