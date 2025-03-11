@@ -19,14 +19,13 @@ This approach for a Naming-Module uses:
 ---
 
 ```Bicep
-import { namingSchemaReference, nameGenerator } from 'br:bicepnamingpoc001.azurecr.io/module.naming:1.0.0'
+import { defaultSchema } from './modules/naming-schema/module.bicep'
+import { name, nameKind } from './modules/naming/module.bicep'
 
 resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-04-01' = {
 
   // Will now generate a name such as: vnet-demo-euwe-dev-001
-  name: nameGenerator(
-    'Microsoft.Network/virtualNetworks',
-    namingSchemaReference,
+  name: nameGenerator('Microsoft.Network/virtualNetworks', defaultSchema,
     {
       index: 1
       name: vnetConfig.name
@@ -34,8 +33,8 @@ resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-04-01' = {
       environment: environment
     }
   )
-  location: location
 
+  location: location
   properties: {
     // Define properties for the Virtual Network.
   }
@@ -47,106 +46,87 @@ resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-04-01' = {
 
 ### Defining the Naming-Module
 
-The Naming-Module consists of two resources, which can be imported by other modules:
-- `nameGenerator()`: A user defined function for generating the desired name
-- `namingSchemaReference`: A reference for defining names for each resource, which is provided to the **nameGenerator()** upon calling it
+The Naming-Module consists of three resources, which can be imported by other modules:
+- `name()`: Generating name for a normal resource
+- `nameKind()`: Generating based on kind. FunctionApp vs. App, OSdisk vs DataDisk, etc.
+- `schema`: A reference for defining names for each resource, which is provided to the **name()** upon calling it
 
-The **namingSchemaReference** consists of two parts:
-- Defining the short names for each Azure location used
-- Defining the naming patterns for each Azure resource used
-
-This can be customized and extended to the desired Naming-Preferences. One or multiple **SchemaReferences** can be created for different Naming-Conventions. The schema is passed to the **nameGenerator()-Function**, using the information to generate an appropriate name. Each resource definition defines the naming via a pattern, delimiter and required parameters. A special formatting can be applied to certain parameters. A PostfixIndex can be formated this way to be always padded with three zeroes, turning '1' into '001'. The validation block can apply validation of a range or a set for each parameter, forcing an error on fail.
+The **namingSchemaReference**:
 
 ```Bicep
-// NOTE: Needs to be exported, so it can be imported by other modules
+
+import { defaultAbbreviations } from 'var.abbr.bicep'
+import { defaultLocations } from 'var.location.bicep'
+
 @export()
-var namingSchemaReference = {
-  locations: {
-    'West Europe': 'euwe'
-    westeurope: 'euwe'
+var schemaReference = {
+  abbreviations: defaultAbbreviations
+  locations: defaultLocations
+
+  enforceLowerCase: {
+    default: true
+    'Microsoft.ContainerRegistry/registries': true
+    'Microsoft.Storage/storageAccounts': true
   }
 
-  resources: {
-    'Microsoft.Network/virtualNetworks': {
-      enforceAllLowerCase: true
+  /*
+    NOTE:
+    - <>        : denote key words which are replaced by parameters
+    - <?>       : denote a optional parameter. If not provided will be empty
+    - <?;-{0}>  : optional parameter with a custom format. (Use this for optionals, because it optionally deploy the seperator '-')
+    -           : everything else is treated as a string.
 
-      delimiter: '-'
-      pattern: ['vnet', '<PREFIX>', '<NAME>', '<LOCATION>', '<ENVIRONMENT>', '<POSTFIX_INDEX>']
-      required: [
-        'NAME'
-        'LOCATION'
-        'ENVIRONMENT'
-        'POSTFIX_INDEX'
-      ]
-      format: {
-        // format a postfixIndex number into a string with three padded zeroes:
-        // '1'  => '001'
-        // '2'  => '002'
-        // '12' => '012'
-        POSTFIX_INDEX: '{0:000}'
+    SPECIAL PARAMETERS:
+    The following only applies for modules, that correctly implement the naming schema.
+    - <INDEX>: should always point to the current index in an iteration. (For example with multiple subnets)
+    - <KEY>: should always point to the current key in an iteration. (When iterating over objects with items())
+    - <LOCATION>: should always point to the location of the resource.
+    - <UNIQUE_STRING_N>: is a unique id based on the resource group name. (N can be any number between 0 and 9)
+  
+    !!! NOTE !!!
+    UNIQUE_STRING_N is only available on resource group scope, since it uses the resource group name to generate the unique string.
+    The deployment name is not used, because when dealing with deployment stacks, the deployment name changes with each execution.
+    This doesn't happen with normal deployments, but the module is designed to work consistently in both cases.
+  */
+
+  // This is used to modify the index.
+  // Most naming start counting at 1. rg-euwe-dev-project-01
+  // All modules start  with index at 1 when providing the value.
+  // If you want to start at 0, you can set this to -1.
+  indexModifier: 0
+  patterns: {
+    default: '<ABBREVIATION><?PREFIX;-{0}>-<LOCATION>-<ENVIRONMENT>-<NAME>'
+
+    'Microsoft.Subscription/alias': '<COMPANY>-<NAME>-<ENVIRONMENT>-subs-<IDENTIFIER;{0:0000}>'
+
+    // 
+    'Microsoft.KeyVault/vaults': 'kv<?PREFIX;-{0}>-<LOCATION>-<ENVIRONMENT>-<UNIQUE_STRING_5>'
+    'Microsoft.Storage/storageAccounts': 'st<?PREFIX><LOCATION><ENVIRONMENT><NAME>'
+
+    // Compute
+    'Microsoft.Compute/disks': {
+      data: '<ABBREVIATION><INDEX;{0:00}>-<NAME>-<ENVIRONMENT>'
+      OS: '<ABBREVIATION>-<NAME>-<ENVIRONMENT>'
+    }
+  }
+
+  validate: {
+    default: {
+      INDEX: {
+        range: [0, 999]
       }
-      validate: {
-        POSTFIX_INDEX: {
-          range: [0, 999]
-        }
-        ENVIRONMENT: {
-          set: [
-            'dev'
-            'test'
-            'prod'
-          ]
-        }
+    }
+
+    // The logic checks for any type that starts with 'Microsoft.Compute/disks'
+    'Microsoft.Compute/disks': {
+      INDEX: {
+        range: [0, 10]
       }
     }
   }
 }
 ```
 
-### Using the Naming-Module
-
-To use the Naming-Module, the exported **schemaReference** and **nameGenerator()**-Function need to be imported. The imported **nameGenerator()**-Function can then be simply called to create the desired name.
-
-> <span style="color:orange">**Optimally it is imported from some central place, such as a Bicep-Module-Registry, so the naming is maintained and used from one central source**</span>
-
-> <span style="color:orange">**The Module also forces an error failing the Function-Call when a parameter defined as required in the **namingSchemaReference** is not provided!**</span>
-
-> <span style="color:orange">**The Module can be imported to modules with any scope**</span>
-
-```Bicep
-// This can also be imported from a Bicep-Module-Registry
-// import { namingSchemaReference, nameGenerator } from 'br:bicepnamingpoc001.azurecr.iomodule.naming:1.0.0'
-
-import { namingSchemaReference, nameGenerator } from 'module.naming.bicep'
-
-/*
-
-Call the nameGenerator() with:
-- The resourceType as defined in the nameSchemaReference
-- The nameSchmaReference (Naming-Convention) that should be used
-- The parameters for generating the name
-*/
-
-resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-04-01' = {
-
-  // Will now generate a name such as: vnet-demo-euwe-dev-001
-  name: nameGenerator(
-    'Microsoft.Network/virtualNetworks',
-    namingSchemaReference,
-    {
-      name: vnetConfig.name
-      location: location
-      environment: environment
-      postfixIndex: 1
-    }
-  )
-  location: location
-
-  properties: {
-    // Define properties for the Virtual Network.
-  }
-}
-
-```
 
 ### NOTES:
 
@@ -155,41 +135,6 @@ The Keywords used in the pattern are customizable. For each keyword, a correspon
 If it is required and not provided, an error such as the following is forced by the function, preventing incorrect naming to be deployed.
 
 ![example.error.missingParameter](./_resources/example.error.mssingParameter.png)
-
-<span style="color:orange">**This doesn't apply for special Parameters which currently are UNIQUE_STRING **</span>
-
-<span style="color:orange">**Keywords used in the pattern array need always be written in `< >`**</span>
-
-```Bicep
-resources: {
-  'Microsoft.KeyVault/vaults': {
-    enforceAllLowerCase: true
-    delimiter: '-'
-
-    pattern: ['kv', '<PREFIX>', '<NAME>', '<CUSTOM_PARAMETER>','<ENVIRONMENT>', '<UNIQUE_STRING>']
-    required: [
-      'NAME'
-      'ENVIRONMENT'
-      'CUSTOM_PARAMETER' 
-    ]
-    format: {
-      CUSTOM_PARAMETER: '{0:000}'
-    }
-  }
-}
-
-// Upon Function-Call this now expects a custom parameter in camelcase.
-var kvName = nameGenerator(
-    'Microsoft.Network/virtualNetworks',
-    namingSchemaReference,
-    {
-      name: 'secrets'
-      environment: 'dev'
-      customParameter: 'bla'
-    }
-  )
-
-```
 
 <br>
 
