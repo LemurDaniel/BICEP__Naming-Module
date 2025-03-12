@@ -48,48 +48,6 @@ func nameGenerator2(pattern string[], resourceType string, schema object, parame
   parameters.?OVERWRITE ?? last([
     /*
 
-      Validation for missing required parameters.
-
-    */
-
-    // map__required_Present
-    map(
-      // filter__required_Filter
-      filter(
-        // map__required_Transform
-        map(
-          pattern,
-          //
-          // Transform segments into objects for easier handling
-          required_Transform =>
-            ({
-              // This gives the segment with the control characters: <>, ?, _, ; removed
-              value: split(
-                replace(replace(replace(replace(required_Transform, '<', ''), '>', ''), '?', ''), '_', ''),
-                ';'
-              )[0]
-              isParam: startsWith(required_Transform, '<') && endsWith(required_Transform, '>')
-              isOptional: startsWith(required_Transform, '<?')
-            })
-        ),
-        //
-        // Filter out for conditions:
-        // - isParam: Only parameters are required
-        // - isOptional: Optional parameters are not required
-        // - specialParams: Special params are not provided via parameters
-        required_Filter =>
-          required_Filter.isParam && !required_Filter.isOptional && !startsWith(required_Filter.value, 'UNIQUESTRING')
-      ),
-      //
-      // Filter out all required parameters that are not provided
-      // NOTE: 
-      // Bicep apperently is case-insensitive here
-      // 'customparameter', 'CUSTOMPARAMETER', etc. all access 'customParameter' regardless of casing
-      required_Present => parameters[required_Present.value]
-    )
-
-    /*
-
       Validation for parameter being in correct number range.
 
     */
@@ -160,10 +118,10 @@ func nameGenerator2(pattern string[], resourceType string, schema object, parame
       validation_Error =>
         ({
           setInvalid: !validation_Error.SetValid
-            ? parameters['${validation_Error.key} with ${validation_Error.value} is not in set: ${validation_Error.validations.set.value}']
+            ? fail('${validation_Error.key} with ${validation_Error.value} is not in set: ${validation_Error.validations.set.value}')
             : null
           rangeInvalid: !validation_Error.RangeValid
-            ? parameters['${validation_Error.key} with ${validation_Error.value} is not in range: ${validation_Error.validations.range.value}']
+            ? fail('${validation_Error.key} with ${validation_Error.value} is not in range: ${validation_Error.validations.range.value}')
             : null
         })
     )
@@ -277,5 +235,5 @@ func nameGenerator2(pattern string[], resourceType string, schema object, parame
       )
 
       // This is still in an array of 1, so we can use the map-function on the single-value array.
-    ]) ?? 'ERROR: Naming Generation failed.'
+    ]) ?? fail('ERROR: Naming Generation failed.')
   ])
