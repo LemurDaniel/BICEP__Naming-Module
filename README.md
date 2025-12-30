@@ -2,7 +2,7 @@
 A Consistent Approach to Resource Naming in Bicep
 
 > **Note:**  
-> For the latest updates, check [Module-Registry](https://github.com/LemurDaniel/BICEP__Module-Registry/blob/master/governance/naming/module.bicep). 📝
+> For the latest updates, check [Module-Registry](https://github.com/LemurDaniel/BICEP__Module-Registry/blob/master/modules/utility/naming/generator/README.md). 📝
 
 ---
 
