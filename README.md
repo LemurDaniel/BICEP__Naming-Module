@@ -20,14 +20,13 @@ A Consistent Approach to Resource Naming in Bicep
 ### Generate a Storage Account Name 📦
 
 ```bicep
-import { defaultSchema } from '../../modules/naming-schema/module.bicep'
-import { genName, genNameId } from '../../modules/naming/module.bicep'
+import { defaultSchema } from '../../naming/schema/module.bicep'
+import { genName, genNameId } from '../../naming/generator/module.bicep'
 
 // Use 'genName()' for consistent naming.
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
-  name: genName('Microsoft.Storage/storageAccounts', defaultSchema, {
+  name: genName('Microsoft.Storage/storageAccounts', defaultSchema, location, {
     name: 'files'
-    location: location
     environment: environment
   })
   location: location
@@ -42,15 +41,13 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
 ### Use Different Abbreviations for the Same Resource 🔄
 
 ```bicep
-output functionAppNamingExample string = genName('Microsoft.Web/sites::function', defaultSchema, {
+output functionAppNamingExample string = genName('Microsoft.Web/sites::function', defaultSchema, location, {
   name: 'apps'
-  location: location
   environment: environment
   index: 1
 })
-output appServiceNamingExample string = genName('Microsoft.Web/sites::app', defaultSchema, {
+output appServiceNamingExample string = genName('Microsoft.Web/sites::app', defaultSchema, location, {
   name: 'apps'
-  location: location
   environment: environment
   index: 1
 })
@@ -64,13 +61,13 @@ output appServiceNamingExample string = genName('Microsoft.Web/sites::app', defa
 
 There are two main functions, each supporting multiple overloads:
 
-- `genName(<schema>, <resourceType>, <location>, <parameters>)`  
+- `genName(<resourceType>, <schema>, <location>, <parameters>)`  
   Generates a name based on the resource type and parameters.
-- `genName(<schema>, <resourceType>::kind, <location>, <parameters>)`  
+- `genName(<resourceType>::kind, <schema>, <location>, <parameters>)`  
   Differentiates between kinds of the same resource type.
-- `genNameId(<schema>, <resourceType>, <id>, <location>, <parameters>)`  
+- `genNameId(<resourceType>, <id>, <schema>, <location>, <parameters>)`  
   Generates a unique identifier for a resource or group.
-- `genNameId(<schema>, <resourceType>::kind, <id>, <location>, <parameters>)`  
+- `genNameId(<resourceType>::kind, <id>, <schema>, <location>, <parameters>)`  
   Combines kind and id for fine-grained naming.
 
 ### The Naming Schema 🗂️
@@ -99,7 +96,7 @@ var defaultLocations = {
 
 Map resource types (and kinds) to abbreviations:
 - `<resourceType>::kind` refers to different namings for the same resource
-- `genName(<resourceType>::kind, <schema>, <parameters>)` 
+- `genName(<resourceType>::kind, <schema>, <location>, <parameters>)` 
 - You can 
 ```bicep
 @export()
