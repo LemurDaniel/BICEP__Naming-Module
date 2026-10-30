@@ -5,6 +5,8 @@
 
 <div align="center">
 
+<img src=".github/social-preview.png" alt="Bicep Naming Module – schema-driven Azure resource naming" width="800">
+
 <br><br>
 
 ![Bicep](https://img.shields.io/badge/Bicep-0078D4?style=for-the-badge&logo=microsoftazure&logoColor=white)
