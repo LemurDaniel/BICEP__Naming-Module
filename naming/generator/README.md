@@ -153,10 +153,11 @@ var schemaReference = {
     - <INDEX>: should always point to the current index in an iteration. (For example with multiple subnets)
     - <KEY>: should always point to the current key in an iteration. (When iterating over objects with items())
     - <LOCATION>: should always point to the location of the resource.
-    - <UNIQUE_STRING_N>: is a unique id based on the resource group name. (N can be any number between 0 and 9)
+    - <UNIQUE_STRING_N>: is a unique id based on subscription id and resource group name (parameter uniqueScope: subscription for subscription scope). (N can be any number between 0 and 9)
   
     !!! NOTE !!!
-    UNIQUE_STRING_N is only available on resource group scope, since it uses the resource group name to generate the unique string.
+    UNIQUE_STRING_N uses the subscription id and the resource group name to generate the unique string.
+    At subscription scope there is no resource group, so set the parameter uniqueScope to 'subscription'. The hash is then based on the subscription id only.
     The deployment name is not used, because when dealing with deployment stacks, the deployment name changes with each execution.
     This doesn't happen with normal deployments, but the module is designed to work consistently in both cases.
   */

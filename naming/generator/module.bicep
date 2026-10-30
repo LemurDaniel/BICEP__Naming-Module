@@ -15,8 +15,10 @@ type typeNamingSchema = {
   locations: object
 
   mappings: object?
-  indexStart: int?
-  
+  indexModifier: int?
+  enforceLowerCase: object?
+  validate: object?
+
   patterns: object
 }
 

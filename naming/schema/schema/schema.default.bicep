@@ -50,7 +50,7 @@ var schemaReference = {
     - <KIND>            : points to the current kind or id
     - <ID>              : points specifically to the id when provided
     - <LOCATION>        : points to the location of the resource.
-    - <UNIQUE_STRING_N> : is a unique id based on the resource group name. (N can be any number between 0 and 9)
+    - <UNIQUE_STRING_N> : is a unique id based on subscription id and resource group name (parameter uniqueScope: subscription for subscription scope). (N can be any number between 0 and 9)
   */
 
   // This is used to modify the index by adding and subtracting some amount
@@ -100,7 +100,7 @@ var schemaReference = {
     ////////////////////////////////////////////////
     ///// Microsoft.KeyVault & Microsoft.Storage
 
-    'INLINE::Microsoft.KeyVault/vaults': 'kv<?PREFIX;-{0}>-<LOCATION>-<ENVIRONMENT>-<UNIQUE_STRING_5>'
+    'INLINE::Microsoft.KeyVault/vaults': 'kv<?PREFIX;-{0}>-<LOCATION>-<ENVIRONMENT>-<UNIQUE_STRING_5>-<NAME>'
     'INLINE::Microsoft.Storage/storageAccounts': 'st<?PREFIX><LOCATION><ENVIRONMENT><NAME>'
 
     ////////////////////////////////////////////////

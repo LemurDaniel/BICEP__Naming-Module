@@ -1,3 +1,6 @@
+> [!NOTE]
+> **AI Notice:** Parts of this repository (code, fixes and documentation) were created or revised with the help of AI ([Claude Code](https://claude.com/claude-code)). All changes were reviewed by the maintainer.
+
 # Bicep Naming Module
 
 <div align="center">
@@ -6,7 +9,7 @@
 
 ![Bicep](https://img.shields.io/badge/Bicep-0078D4?style=for-the-badge&logo=microsoftazure&logoColor=white)
 ![Azure](https://img.shields.io/badge/Azure-0089D6?style=for-the-badge&logo=microsoftazure&logoColor=white)
-![Version](https://img.shields.io/badge/version-5.5.0-blue?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-1.0.0-blue?style=for-the-badge)
 
 A consistent, schema-driven approach to Azure resource naming in Bicep.
 
@@ -172,11 +175,11 @@ Patterns are strings with placeholder tokens that get replaced at evaluation tim
 |---|---|
 | `<TYPE>` | Resolved abbreviation for the resource type |
 | `<LOCATION>` | Short location name from the locations map |
-| `<INDEX>` | Current loop index |
+| `<INDEX>` | Current loop index. Required, unless written as `<?INDEX>` (omitted when `index` is not set; no default) |
 | `<KEY>` | Current loop key (when iterating with `items()`) |
 | `<KIND>` | The kind or id suffix |
 | `<ID>` | points specifically to the id when provided |
-| `<UNIQUE_STRING_N>` | Unique hash from resource group name (N = 0–9, resource group scope only) |
+| `<UNIQUE_STRING_N>` | Unique hash from subscription id + resource group name (N = 0–9). At subscription scope pass `uniqueScope: 'subscription'` (hash from subscription id only) |
 
 ### Pattern Entries
 
@@ -187,7 +190,7 @@ patterns: {
 
   // Single pattern for one resource type (INLINE:: prefix required)
   'INLINE::Microsoft.Storage/storageAccounts': 'st<?PREFIX><LOCATION><ENVIRONMENT><NAME>'
-  'INLINE::Microsoft.KeyVault/vaults':         'kv<?PREFIX;-{0}>-<LOCATION>-<ENVIRONMENT>-<UNIQUE_STRING_5>'
+  'INLINE::Microsoft.KeyVault/vaults':         'kv<?PREFIX;-{0}>-<LOCATION>-<ENVIRONMENT>-<UNIQUE_STRING_5>-<NAME>'
 
   // Multiple patterns per resource type, selected by kind or id
   'Microsoft.Compute/disks': {
@@ -282,7 +285,7 @@ var schemaReference = {
     - <KIND>            : points to the current kind or id
     - <ID>              : points specifically to the id when provided
     - <LOCATION>        : points to the location of the resource.
-    - <UNIQUE_STRING_N> : is a unique id based on the resource group name. (N can be any number between 0 and 9)
+    - <UNIQUE_STRING_N> : is a unique id based on subscription id and resource group name (parameter uniqueScope: subscription for subscription scope). (N can be any number between 0 and 9)
   */
 
   // This is used to modify the index by adding and subtracting some amount
@@ -332,7 +335,7 @@ var schemaReference = {
     ////////////////////////////////////////////////
     ///// Microsoft.KeyVault & Microsoft.Storage
 
-    'INLINE::Microsoft.KeyVault/vaults': 'kv<?PREFIX;-{0}>-<LOCATION>-<ENVIRONMENT>-<UNIQUE_STRING_5>'
+    'INLINE::Microsoft.KeyVault/vaults': 'kv<?PREFIX;-{0}>-<LOCATION>-<ENVIRONMENT>-<UNIQUE_STRING_5>-<NAME>'
     'INLINE::Microsoft.Storage/storageAccounts': 'st<?PREFIX><LOCATION><ENVIRONMENT><NAME>'
 
     ////////////////////////////////////////////////

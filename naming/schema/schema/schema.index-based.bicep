@@ -48,7 +48,7 @@ var schemaReference = {
     - <KIND>            : points to the current kind or id
     - <ID>              : points specifically to the id when provided
     - <LOCATION>        : points to the location of the resource.
-    - <UNIQUE_STRING_N> : is a unique id based on the resource group name. (N can be any number between 0 and 9)
+    - <UNIQUE_STRING_N> : is a unique id based on subscription id and resource group name (parameter uniqueScope: subscription for subscription scope). (N can be any number between 0 and 9)
   */
 
   // This is used to modify the index by adding and subtracting some amount
@@ -104,19 +104,24 @@ var schemaReference = {
     ////////////////////////////////////////////////
     ///// Microsoft.KeyVault & Microsoft.Storage
 
-    'INLINE::Microsoft.KeyVault/vaults': 'kv<?PREFIX;-{0}>-<LOCATION>-<ENVIRONMENT>-<UNIQUE_STRING_5>-<?INDEX;{0:00}>'
+    'INLINE::Microsoft.KeyVault/vaults': 'kv<?PREFIX;-{0}>-<LOCATION>-<ENVIRONMENT>-<UNIQUE_STRING_5><?INDEX;-{0:00}>'
     'INLINE::Microsoft.Storage/storageAccounts': 'st<?PREFIX><LOCATION><ENVIRONMENT><?INDEX;{0:00}>'
 
     ////////////////////////////////////////////////
     ///// Microsoft.Web & Microsoft.Compute
 
-    'INLINE::Microsoft.Web/sites/functions': 'func-<?PREFIX>-<LOCATION>-<ENVIRONMENT>-<PROJECT_NAME>-<?INDEX;{0:00}>'
-    'INLINE::Microsoft.Compute/disks': '<DISK_TYPE><INDEX;{0:0}>-'
+    'Microsoft.Web/sites': {
+      function: '<TYPE><?PREFIX;-{0}>-<LOCATION>-<ENVIRONMENT>-<PROJECT_NAME><?INDEX;-{0:00}>'
+    }
+    'Microsoft.Compute/disks': {
+      data: '<TYPE><INDEX;{0:00}>-<LOCATION>-<ENVIRONMENT>-<PROJECT_NAME>'
+      os: '<TYPE>-<LOCATION>-<ENVIRONMENT>-<PROJECT_NAME>'
+    }
 
     ////////////////////////////////////////////////
     ///// Microsoft.ContainerRegistry
 
-    'INLINE::Microsoft.ContainerRegistry/registries': 'acr<?PREFIX><LOCATION><ENVIRONMENT><UNIQUE_STRING_5>'
+    'INLINE::Microsoft.ContainerRegistry/registries': 'acr<?PREFIX><LOCATION><ENVIRONMENT><UNIQUE_STRING_5><?INDEX;{0:00}>'
 
     ////////////////////////////////////////////////
     ///// Microsoft.Network

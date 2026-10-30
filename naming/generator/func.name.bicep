@@ -21,6 +21,9 @@ func nameGenerator(
       {
         indexModifier: 0
         mappings: {}
+        enforceLowerCase: {
+          default: false
+        }
       },
       schema
     ),
@@ -28,8 +31,7 @@ func nameGenerator(
     // [Parameters]     | Set empty default in parameters, when not provided
     union(
       {
-        // Default index is 1, when not set
-        index: 1
+        // No default index. <INDEX> requires it, <?INDEX> is omitted when not set.
         key: null
         id: id
         kind: split(resourceType, '::')[?1] ?? id
@@ -55,7 +57,9 @@ func selectAbbreviation(abbreviations object, resourceType string, kind string?,
   // - Fail with an error, if no abbreviation is found
   filter(
     [
-      abbreviations[?'${resourceType}::${kind ?? id ?? 'default'}']
+      abbreviations[?'${resourceType}::${kind ?? 'default'}']
+      abbreviations[?'${resourceType}::${id ?? 'default'}']
+      abbreviations[?'${resourceType}::default']
       abbreviations[?resourceType]
     ],
     abbreviation => !empty(abbreviation)
@@ -73,7 +77,8 @@ func selectPattern(patterns object, resourceType string, kind string?, id string
   // - Fail with an error, if no pattern is found
   filter(
     [
-      patterns[?resourceType][?id ?? kind ?? 'default']
+      patterns[?resourceType][?id ?? 'default']
+      patterns[?resourceType][?kind ?? 'default']
       patterns[?resourceType].?default
       patterns[?'INLINE::${resourceType}']
       patterns.?default
@@ -134,7 +139,7 @@ func segment_Finalisation(pattern string, schemaRef object, paramRef object) arr
         paramRef,
         //
         // [value]        | The segment without any control characters like '<', '>', '?'
-        replace(replace(replace(replace(value, '<', ''), '>', ''), '?', ''), '_', ''),
+        replace(replace(replace(value, '<', ''), '>', ''), '?', ''),
 
         // [isParam]      | true, if the segment starts with '<' and ends with '>'
         startsWith(value, '<') && endsWith(value, '>'),
@@ -159,19 +164,22 @@ func segment_Transform(schemaRef object, paramRef object, value string, isParam 
     // [isOptional]         | true, if the segment contains '?'
     isOptional,
     // [isSpecialKey]   | true, if the segment is a special key word
-    length(filter(['INDEX', 'LOCATION', 'UNIQUESTRING'], keyword => startsWith(value, keyword))) > 0,
+    contains(['INDEX', 'LOCATION'], segment_KeyWord(value)) || startsWith(segment_KeyWord(value), 'UNIQUESTRING'),
 
     // Below are only relvent, when isParam is true
 
     // The parameter may be in format <PARAMETER_NAME;{0}> or <PARAMETER_NAME>
-    // [keyWord]              | The PARAMETER_NAME
-    split(value, ';')[0],
-    // [formatStr]             | The format defaults to {0}
+    // [keyWord]              | The PARAMETER_NAME without '_' (PROJECT_NAME => PROJECTNAME)
+    segment_KeyWord(value),
+    // [formatStr]             | The format defaults to {0}. Is not altered, so '_' is kept.
     split(value, ';')[?1] ?? '{0}',
 
     // [mapping]         | Searches for the mapping set with the logic above
-    schemaRef.mappings[?split(value, ';')[0]] ?? {}
+    schemaRef.mappings[?segment_KeyWord(value)] ?? {}
   )
+
+// The parameter name is the part before ';'. Only here '_' is removed, literal text and format strings are kept as is.
+func segment_KeyWord(value string) string => replace(split(value, ';')[0], '_', '')
 
 //////////////////////////////////////////////////////////////////////////////////
 ///////   Replace segments in pattern with correct parameters, if it is a parameter < >
@@ -199,10 +207,10 @@ func segment_Replace(
       keyWord == 'LOCATION' ? sR_Location(paramRef, schemaRef) : null
 
       // Handle INDEX parameter
-      keyWord == 'INDEX' ? sR_Index(paramRef, schemaRef, formatStr) : null
+      keyWord == 'INDEX' ? sR_Index(paramRef, schemaRef, formatStr, isOptional) : null
 
       // Handle UNIQUESTRING_N parameter
-      startsWith(keyWord, 'UNIQUESTRING') ? sR_UniqueString_N(keyWord) : null
+      startsWith(keyWord, 'UNIQUESTRING') ? sR_UniqueString_N(paramRef, keyWord) : null
 
       // Handle Required Parameters with and without mappings
       !isSpecialKey && isParam && !isOptional ? sR_ParamsRequired(paramRef, mapping, keyWord, formatStr) : null
@@ -223,7 +231,8 @@ func sR_ParamsOptional(paramRef object, mapping object, parameter string, format
       contains(mapping, '${paramRef[?parameter]}') ? format(formatStr, mapping[paramRef[parameter]]) : ''
 
       // When no mapping is defined we return the parameter or ''
-      contains(paramRef, parameter) ? format(formatStr, paramRef[parameter]) : ''
+      // Empty values are skipped, so that separators in the format string are not left behind.
+      !empty('${paramRef[?parameter]}') ? format(formatStr, paramRef[parameter]) : ''
     ],
     p => !empty(p)
   )[?0] ?? ''
@@ -247,14 +256,18 @@ func sR_ParamsRequired(paramRef object, mapping object, parameter string, format
       : format(formatStr, paramRef[parameter])
   ])
 
-func sR_Index(paramRef object, schemaRef object, formatStr string) string =>
-  !contains(paramRef, 'index')
-    ? fail('\n\nERROR: Parameter index is not defined in the parameters.')
+func sR_Index(paramRef object, schemaRef object, formatStr string, isOptional bool) string =>
+  empty('${paramRef.?index}')
+    ? (isOptional ? '' : fail('\n\nERROR: Parameter index is not defined in the parameters.'))
     : format(formatStr, int(paramRef.index) + int(schemaRef.indexModifier))
 
-func sR_UniqueString_N(keyWord string) string =>
+func sR_UniqueString_N(paramRef object, keyWord string) string =>
   substring(
-    uniqueString(resourceGroup().?name ?? subscription().?subscriptionId ?? fail('\n\nERROR: Could not determine unique string')),
+    // Based on subscription id and resource group name, so names are globally unique across subscriptions.
+    // At subscription scope (resourceGroup() is not available) set the parameter 'uniqueScope' to 'subscription'.
+    paramRef.?uniqueScope == 'subscription'
+      ? uniqueString(subscription().subscriptionId)
+      : uniqueString(subscription().subscriptionId, resourceGroup().name),
     0,
     int(replace(keyWord, 'UNIQUESTRING', ''))
   )
@@ -287,9 +300,9 @@ This function retrives all relevant validations matching following condition:
 ''')
 func getRelevantValidations(validations object, resourceType string, paramRef object) array =>
   filter(
-    items(filter(items(validations), item => startsWith(item.key, resourceType))[?0] ?? validations.?default ?? {}),
+    items(filter(items(validations), item => startsWith(split(resourceType, '::')[0], item.key))[?0] ?? validations.?default ?? {}),
     // Filter out all parameters that are not defined in the paramRef
-    paramValidation => contains(paramRef, paramValidation.key)
+    paramValidation => !empty('${paramRef[?paramValidation.key]}')
   )
 
 @description('''
